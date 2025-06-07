@@ -58,3 +58,10 @@ function App() {
     setAmount("");
     setCategory("");
   };
+
+  const handleDeleteTransaction = (id: string) => {
+    setTransactions((prevTransactions) =>
+      prevTransactions.filter((transaction) => transaction.id !== id)
+    );
+  };
+}
