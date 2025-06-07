@@ -159,4 +159,127 @@ function App() {
 
     setNudges(generated);
   };
+
+  return (
+    <div className="app-container">
+      <header className="app-header">
+        <h1>Financial Nudge Engine</h1>
+        <p>Your personal assistant for smarter spending.</p>
+      </header>
+
+      <main className="main-content">
+        <section className="transaction-form-section card">
+          <h2>Add New Transaction</h2>
+          <form onSubmit={handleAddTransaction} className="transaction-form">
+            <div className="form-group">
+              <label htmlFor="description">Description:</label>
+              <input
+                type="text"
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="e.g., Coffee, Bus fare, Paycheck"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="amount">Amount (£):</label>
+              <input
+                type="number"
+                id="amount"
+                value={amount}
+                onChange={(e) => setAmount(parseFloat(e.target.value) || "")}
+                placeholder="e.g., 4.50 or -20.00 (for expense) or 500.00 (for income)"
+                step="0.01"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="category">Category:</label>
+              <select
+                id="category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                required
+              >
+                <option value="" disabled>
+                  Select a category
+                </option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button type="submit" className="btn-add-transaction">
+              Add Transaction
+            </button>
+          </form>
+        </section>
+
+        <section className="nudges-section card">
+          <h2>Your Financial Nudges</h2>
+          {nudges.length === 0 ? (
+            <p className="no-nudges-message">
+              No nudges yet, add more transactions to see insights!
+            </p>
+          ) : (
+            <ul className="nudges-list">
+              {nudges.map((nudge, index) => (
+                <li key={index} className="nudge-item">
+                  <span className="nudge-icon">&#128161;</span> {nudge}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="transaction-list-section card">
+          <h2>Your Transactions</h2>
+          {transactions.length === 0 ? (
+            <p className="no-transactions-message">
+              No transactions yet. Add some to get started!
+            </p>
+          ) : (
+            <ul className="transaction-list">
+              {transactions.map((transaction) => (
+                <li key={transaction.id} className="transaction-item">
+                  <div className="transaction-details">
+                    <span className="transaction-date">{transaction.date}</span>
+                    <span className="transaction-description">
+                      {transaction.description}
+                    </span>
+                    <span className="transaction-category">
+                      ({transaction.category})
+                    </span>
+                  </div>
+                  <div className="transaction-amount">
+                    <span
+                      className={
+                        transaction.amount > 0
+                          ? "amount-income"
+                          : "amount-expense"
+                      }
+                    >
+                      £{transaction.amount.toFixed(2)}
+                    </span>
+                    <button
+                      onClick={() => handleDeleteTransaction(transaction.id)}
+                      className="btn-delete-transaction"
+                      title="Delete transaction"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </main>
+    </div>
+  );
 }
+
+export default App;
