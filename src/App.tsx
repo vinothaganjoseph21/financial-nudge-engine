@@ -18,6 +18,10 @@ function App() {
 
   const [nudges, setNudges] = useState<string[]>([]);
 
+  const [whatIfSavingAmount, setWhatIfSavingAmount] = useState<number | "">("");
+
+  const [projectedSavings, setProjectedSavings] = useState<number | null>(null);
+
   const categories = [
     "Groceries",
     "Transport",
@@ -46,6 +50,7 @@ function App() {
       description,
       amount,
       category,
+
       date: new Date().toISOString().split("T")[0],
     };
 
@@ -160,6 +165,49 @@ function App() {
     setNudges(generated);
   };
 
+  const handleCalculateWhatIf = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (
+      typeof whatIfSavingAmount !== "number" ||
+      isNaN(whatIfSavingAmount) ||
+      whatIfSavingAmount <= 0
+    ) {
+      console.error(
+        "Please enter a valid positive saving amount for the What If scenario."
+      );
+      setProjectedSavings(null);
+      return;
+    }
+
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
+    const currentMonthIncome = transactions
+      .filter(
+        (t) =>
+          t.amount > 0 &&
+          new Date(t.date).getMonth() === currentMonth &&
+          new Date(t.date).getFullYear() === currentYear
+      )
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const currentMonthExpenses = transactions
+      .filter(
+        (t) =>
+          t.amount < 0 &&
+          new Date(t.date).getMonth() === currentMonth &&
+          new Date(t.date).getFullYear() === currentYear
+      )
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+    const currentMonthlyNet = currentMonthIncome - currentMonthExpenses;
+
+    const projectedSixMonthSavings =
+      (currentMonthlyNet + whatIfSavingAmount) * 6;
+    setProjectedSavings(projectedSixMonthSavings);
+  };
+
   return (
     <div className="app-container">
       <header className="app-header">
@@ -232,6 +280,46 @@ function App() {
                 </li>
               ))}
             </ul>
+          )}
+        </section>
+
+        <section className="what-if-section card">
+          <h2>What If Scenarios</h2>
+          <form onSubmit={handleCalculateWhatIf} className="what-if-form">
+            <div className="form-group">
+              <label htmlFor="whatIfSaving">
+                What if I save an extra amount each month? (£):
+              </label>
+              <input
+                type="number"
+                id="whatIfSaving"
+                value={whatIfSavingAmount}
+                onChange={(e) =>
+                  setWhatIfSavingAmount(parseFloat(e.target.value) || "")
+                }
+                placeholder="e.g., 50"
+                step="0.01"
+                required
+              />
+            </div>
+            <button type="submit" className="btn-what-if">
+              Calculate Impact
+            </button>
+          </form>
+
+          {projectedSavings !== null && (
+            <div className="what-if-result">
+              <p>
+                In 6 months, with an extra £{whatIfSavingAmount} saved per
+                month, you could have approximately:
+              </p>
+              <p className="projected-amount">£{projectedSavings.toFixed(2)}</p>
+              <p className="result-note">
+                {" "}
+                (This projection is based on your current month's average net
+                income.)
+              </p>
+            </div>
           )}
         </section>
 
