@@ -17,10 +17,12 @@ function App() {
   const [category, setCategory] = useState("");
 
   const [nudges, setNudges] = useState<string[]>([]);
-
   const [whatIfSavingAmount, setWhatIfSavingAmount] = useState<number | "">("");
-
   const [projectedSavings, setProjectedSavings] = useState<number | null>(null);
+
+  const [predictiveTrends, setPredictiveTrends] = useState<{
+    [category: string]: number;
+  }>({});
 
   const categories = [
     "Groceries",
@@ -50,7 +52,6 @@ function App() {
       description,
       amount,
       category,
-
       date: new Date().toISOString().split("T")[0],
     };
 
@@ -72,6 +73,7 @@ function App() {
 
   useEffect(() => {
     generateNudges(transactions);
+    calculatePredictiveTrends(transactions);
   }, [transactions]);
 
   const generateNudges = (currentTransactions: Transaction[]) => {
@@ -163,6 +165,54 @@ function App() {
     }
 
     setNudges(generated);
+  };
+
+  const calculatePredictiveTrends = (currentTransactions: Transaction[]) => {
+    const spendingByMonthCategory: {
+      [monthYear: string]: { [category: string]: number };
+    } = {};
+
+    currentTransactions.forEach((t) => {
+      if (t.amount < 0) {
+        const transactionDate = new Date(t.date);
+        const monthYear = `${transactionDate.getFullYear()}-${transactionDate.getMonth()}`;
+        const category = t.category;
+
+        if (!spendingByMonthCategory[monthYear]) {
+          spendingByMonthCategory[monthYear] = {};
+        }
+        spendingByMonthCategory[monthYear][category] =
+          (spendingByMonthCategory[monthYear][category] || 0) +
+          Math.abs(t.amount);
+      }
+    });
+
+    const categoryMonthlyAverages: {
+      [category: string]: { total: number; count: number };
+    } = {};
+    const monthsConsidered: Set<string> = new Set();
+
+    for (const monthYear in spendingByMonthCategory) {
+      monthsConsidered.add(monthYear);
+      for (const category in spendingByMonthCategory[monthYear]) {
+        if (!categoryMonthlyAverages[category]) {
+          categoryMonthlyAverages[category] = { total: 0, count: 0 };
+        }
+        categoryMonthlyAverages[category].total +=
+          spendingByMonthCategory[monthYear][category];
+        categoryMonthlyAverages[category].count++;
+      }
+    }
+
+    const projected: { [category: string]: number } = {};
+    if (monthsConsidered.size > 0) {
+      for (const category in categoryMonthlyAverages) {
+        projected[category] =
+          categoryMonthlyAverages[category].total / monthsConsidered.size;
+      }
+    }
+
+    setPredictiveTrends(projected);
   };
 
   const handleCalculateWhatIf = (event: React.FormEvent) => {
@@ -277,6 +327,27 @@ function App() {
               {nudges.map((nudge, index) => (
                 <li key={index} className="nudge-item">
                   <span className="nudge-icon">&#128161;</span> {nudge}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="predictive-trends-section card">
+          <h2>Predictive Spending Trends</h2>
+          {Object.keys(predictiveTrends).length === 0 ? (
+            <p className="no-trends-message">
+              Add more transactions across different months to see predictive
+              spending trends.
+            </p>
+          ) : (
+            <ul className="trends-list">
+              {Object.entries(predictiveTrends).map(([cat, avgAmount]) => (
+                <li key={cat} className="trend-item">
+                  Based on your past spending, you are projected to spend
+                  approximately{" "}
+                  <span className="trend-amount">£{avgAmount.toFixed(2)}</span>{" "}
+                  on <span className="trend-category">{cat}</span> next month.
                 </li>
               ))}
             </ul>
